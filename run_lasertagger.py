@@ -215,7 +215,7 @@ def main(_):
           iterations_per_loop=FLAGS.iterations_per_loop,
           per_host_input_for_training=is_per_host,
           eval_training_input_configuration=tf.contrib.tpu.InputPipelineConfig
-          .SLICED)) # maybe .PER_HOST_V1, depends if exception is raised
+          .PER_HOST_V1)) # maybe .PER_HOST_V1, depends if exception is raised
 
   if FLAGS.do_train:
     num_train_steps, num_warmup_steps = _calculate_steps(
@@ -252,7 +252,6 @@ def main(_):
         is_training=True,
         drop_remainder=True)
     estimator.train(input_fn=train_input_fn, max_steps=num_train_steps)
-
   if FLAGS.do_eval:
     # This tells the estimator to run through the entire set.
     eval_steps = None

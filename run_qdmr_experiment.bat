@@ -12,15 +12,17 @@ set BERT_BASE_DIR=C:\Users\Osher\Desktop\oren\cased_L-12_H-768_A-12
 set EXPERIMENT=qdmr_experiment
 ::# To quickly test that model training works, set the number of epochs to a
 ::# smaller value (e.g. 0.01).
-set NUM_EPOCHS=3.0
-set BATCH_SIZE=64
+::set NUM_EPOCHS=3.0
+set NUM_EPOCHS=1.5
+::set BATCH_SIZE=64
+set BATCH_SIZE=16
 set PHRASE_VOCAB_SIZE=500
 set MAX_INPUT_EXAMPLES=1000000
 set SAVE_CHECKPOINT_STEPS=500
 
 :: ###########################
 
-::goto NEXT
+goto NEXT
 :: 1. Phrase Vocabulary Optimization
 
 python phrase_vocabulary_optimization.py^
@@ -57,8 +59,8 @@ goto END
 :NEXT
 ::NUM_TRAIN_EXAMPLES=$(cat "${OUTPUT_DIR}/train.tf_record.num_examples.txt")
 ::NUM_EVAL_EXAMPLES=$(cat "${OUTPUT_DIR}/tune.tf_record.num_examples.txt")
-set NUM_TRAIN_EXAMPLES=310922
-set NUM_EVAL_EXAMPLES=5000
+set NUM_TRAIN_EXAMPLES=1933
+set NUM_EVAL_EXAMPLES=2217
 set CONFIG_FILE=C:\Users\Osher\Desktop\oren\lasertagger-master\configs\lasertagger_config.json
 
 python run_lasertagger.py^
