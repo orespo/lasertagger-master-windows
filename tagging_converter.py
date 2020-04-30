@@ -29,6 +29,8 @@ import tagging
 import utils
 
 from typing import Iterable, Mapping, Sequence, Set, Text, Tuple
+import nltk
+from nltk.stem import WordNetLemmatizer
 
 
 class TaggingConverter(object):
@@ -55,8 +57,42 @@ class TaggingConverter(object):
       if len(tokens) > self._max_added_phrase_length:
         self._max_added_phrase_length = len(tokens)
 
-  def compute_tags(self, task,
-                   target):
+  def cluster_of_word_at_target(self, target_sep, word):
+      results = []
+      for i, cluster in enumerate(target_sep):
+        if word in cluster:
+          results.append(i)
+      # print(f"Word '{word}' appear at clusters {results} at target {target_sep}")
+      return results
+
+  def rough_separate(self, input, target):
+    st = WordNetLemmatizer()
+
+    target = target.strip()
+    target_sep = target.split(' @@SEP@@ ')
+    target_sep_stemmed = [[st.lemmatize(w) for w in t.split()] for t in target_sep]
+
+    input_tokenized = nltk.tokenize.word_tokenize(input)
+    input_stemmed = [st.lemmatize(w) for w in input_tokenized]
+
+    rough = ['' for i in range(len(target_sep))]
+    commands = []
+    for i, x in enumerate(input_stemmed):
+      indices = self.cluster_of_word_at_target(target_sep_stemmed, x)
+      if not indices:
+        commands.append(tagging.Tag('DELETE'))
+      else:
+        str_indices = [str(qq) for qq in indices]
+        string_of_command = ', '.join(str_indices)
+        commands.append(tagging.Tag(f'CLUSTER|{string_of_command}'))
+      for j in indices:
+        rough[j] += f'{x} '
+
+    rough = list(map(lambda s: s.strip(), rough))
+
+    return rough, commands, target_sep
+
+  def compute_tags(self, task, target):
     """Computes tags needed for converting the source into the target.
 
     Args:
@@ -67,22 +103,18 @@ class TaggingConverter(object):
       List of tagging.Tag objects. If the source couldn't be converted into the
       target via tagging, returns an empty list.
     """
-    target_tokens = utils.get_token_list(target.lower())
-    tags = self._compute_tags_fixed_order(task.source_tokens, target_tokens)
-    # If conversion fails, try to obtain the target after swapping the source
-    # order.
-    if not tags and len(task.sources) == 2 and self._do_swap:
-      swapped_task = tagging.EditingTask(task.sources[::-1])
-      tags = self._compute_tags_fixed_order(swapped_task.source_tokens,
-                                            target_tokens)
-      if tags:
-        tags = (tags[swapped_task.first_tokens[1]:] +
-                tags[:swapped_task.first_tokens[1]])
-        # We assume that the last token (typically a period) is never deleted,
-        # so we can overwrite the tag_type with SWAP (which keeps the token,
-        # moving it and the sentence it's part of to the end).
-        tags[task.first_tokens[1] - 1].tag_type = tagging.TagType.SWAP
-    return tags
+    rough, commands_to_rough, target_sep = self.rough_separate(task.sources[0], target)
+
+    commands = []
+    for r, t in zip(rough, target_sep):
+      target_tokens = utils.get_token_list(t)
+      tags = self._compute_tags_fixed_order(tagging.EditingTask([r]).source_tokens, target_tokens)
+
+      commands.append(tagging.Tag(f'NEXT_CLUSTER_COMMANDS'))
+      commands.extend(tags)
+
+    all_tags = commands_to_rough + commands
+    return all_tags
 
   def _compute_tags_fixed_order(self, source_tokens, target_tokens):
     """Computes tags when the order of sources is fixed.
@@ -99,9 +131,13 @@ class TaggingConverter(object):
     # Indices of the tokens currently being processed.
     source_token_idx = 0
     target_token_idx = 0
+    if len(source_tokens) == 0:
+      tags.append(tagging.Tag('APPEND|' + ' '.join(target_tokens[0:])))
+      return tags
+
     while target_token_idx < len(target_tokens):
-      tags[source_token_idx], target_token_idx = self._compute_single_tag(
-          source_tokens[source_token_idx], target_token_idx, target_tokens)
+      # tags[source_token_idx], target_token_idx = self._compute_single_tag(source_tokens[source_token_idx], target_token_idx, target_tokens)
+      tags[source_token_idx], target_token_idx = self._compute_single_tag_2(source_tokens[source_token_idx], target_token_idx, target_tokens)
       # If we're adding a phrase and the previous source token(s) were deleted,
       # we could add the phrase before a previously deleted token and still get
       # the same realized output. For example:
@@ -130,11 +166,34 @@ class TaggingConverter(object):
     # are already marked deleted when initializing the tag list.
     if target_token_idx >= len(target_tokens):
       return tags
-    return []
+    tags.append(tagging.Tag('APPEND|' + ' '.join(target_tokens[target_token_idx:])))
+    return tags
+    # return []
 
-  def _compute_single_tag(
-      self, source_token, target_token_idx,
-      target_tokens):
+  def _compute_single_tag_2(self, source_token, target_token_idx, target_tokens):
+    source_token = source_token.lower()
+    target_token = target_tokens[target_token_idx].lower()
+    if source_token == target_token:
+      return tagging.Tag('KEEP'), target_token_idx + 1
+
+    if source_token == '':
+      return tagging.Tag('APPEND|' + ' '.join(target_tokens)), len(target_tokens)
+
+    added_phrase = ''
+    for num_added_tokens in range(1, self._max_added_phrase_length + 1):
+      # if target_token not in self._token_vocabulary:
+      #   break
+      added_phrase += (' ' if added_phrase else '') + target_token
+      next_target_token_idx = target_token_idx + num_added_tokens
+      if next_target_token_idx >= len(target_tokens):
+        break
+      target_token = target_tokens[next_target_token_idx].lower()
+      if (source_token == target_token): # and added_phrase in self._phrase_vocabulary):
+        return tagging.Tag('KEEP|' + added_phrase), next_target_token_idx + 1
+    return tagging.Tag('DELETE|' + added_phrase), next_target_token_idx + 1
+
+
+  def _compute_single_tag(self, source_token, target_token_idx, target_tokens):
     """Computes a single tag.
 
     The tag may match multiple target tokens (via tag.added_phrase) so we return
@@ -188,8 +247,7 @@ class TaggingConverter(object):
     return 0
 
 
-def get_phrase_vocabulary_from_label_map(
-    label_map):
+def get_phrase_vocabulary_from_label_map(label_map):
   """Extract the set of all phrases from label map.
 
   Args:

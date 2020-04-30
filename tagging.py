@@ -41,6 +41,11 @@ class TagType(Enum):
   # applied if there are two source texts and the tag is applied to the last
   # token of the first source. In other contexts, it's treated as KEEP.
   SWAP = 3
+  # insert @@sep@@
+  SEPARATE = 4
+  APPEND = 5
+  CLUSTER = 6
+  NEXT_CLUSTER_COMMANDS = 7
 
 
 class Tag(object):
@@ -72,8 +77,7 @@ class Tag(object):
     try:
       self.tag_type = TagType[tag_type]
     except KeyError:
-      raise ValueError(
-          'TagType should be KEEP, DELETE or SWAP, not {}'.format(tag_type))
+      raise ValueError('TagType should be KEEP, DELETE or SWAP, not {}'.format(tag_type))
     self.added_phrase = added_phrase
 
   def __str__(self):
@@ -81,6 +85,9 @@ class Tag(object):
       return self.tag_type.name
     else:
       return '{}|{}'.format(self.tag_type.name, self.added_phrase)
+
+  def __repr__(self):
+    return str(self)
 
 
 class EditingTask(object):
