@@ -18,14 +18,21 @@ set EXPERIMENT=qdmr_experiment
 ::set NUM_EPOCHS=3.0
 set NUM_EPOCHS=1.25
 ::set BATCH_SIZE=64
-set BATCH_SIZE=8
+set BATCH_SIZE=16
 set PHRASE_VOCAB_SIZE=500
 set MAX_INPUT_EXAMPLES=1000000
 set SAVE_CHECKPOINT_STEPS=500
 
 :: ###########################
 
-goto NEXT_p1
+::goto NEXT_1
+::goto NEXT_p1
+::goto NEXT_p2
+goto NEXT_3_1
+::goto NEXT_4
+::goto NEXT_5
+::goto NEXT_6
+
 :: 1. Phrase Vocabulary Optimization
 
 :NEXT_1
@@ -63,8 +70,8 @@ goto END
 :NEXT_3_1
 ::NUM_TRAIN_EXAMPLES=$(cat "${OUTPUT_DIR}/train.tf_record.num_examples.txt")
 ::NUM_EVAL_EXAMPLES=$(cat "${OUTPUT_DIR}/tune.tf_record.num_examples.txt")
-set NUM_TRAIN_EXAMPLES=1933
-set NUM_EVAL_EXAMPLES=2217
+set NUM_TRAIN_EXAMPLES=40317
+set NUM_EVAL_EXAMPLES=2123
 set CONFIG_FILE=C:\Users\Osher\Desktop\oren\lasertagger-master\configs\lasertagger_config.json
 
 python run_lasertagger.py^

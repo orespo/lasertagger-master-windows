@@ -114,7 +114,8 @@ class TaggingConverter(object):
       commands.extend(tags)
 
     all_tags = commands_to_rough + commands
-    return all_tags
+    return commands_to_rough
+    #return all_tags
 
   def _compute_tags_fixed_order(self, source_tokens, target_tokens):
     """Computes tags when the order of sources is fixed.

@@ -161,7 +161,10 @@ class BertExampleBuilder(object):
     else:
       # If target is not provided, we set all target labels to KEEP.
       tags = [tagging.Tag('KEEP') for _ in task.source_tokens]
-    labels = [self._label_map[str(tag)] for tag in tags]
+    try:
+      labels = [self._label_map[str(tag)] for tag in tags]
+    except KeyError:
+      return None
 
     tokens, labels, token_start_indices = self._split_to_wordpieces(
         task.source_tokens, labels)

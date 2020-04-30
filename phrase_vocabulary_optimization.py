@@ -278,6 +278,14 @@ def main(argv):
         # Write statistics.
         coverage = 100.0 * _count_covered_examples(matrix, i + 1) / num_examples
         stats_writer.write(f'{i+1}\t{count}\t{coverage:.2f}\t{phrase}\n')
+      for i in range(10):
+        for j in range(10):
+          writer.write(f'CLUSTER|{i}, {j}\n')
+          for k in range(10):
+            writer.write(f'CLUSTER|{i}, {j}, {k}\n')
+            for t in range(10):
+              writer.write(f'CLUSTER|{i}, {j}, {k}, {t}\n')
+        writer.write(f'CLUSTER|{i}\n')
   logging.info(f'Wrote tags to: {FLAGS.output_file}')
   logging.info(f'Wrote coverage numbers to: {statistics_file}')
 
