@@ -29,6 +29,8 @@ from enum import Enum
 from typing import Sequence, Text
 
 import utils
+from collections import defaultdict
+
 
 
 class TagType(Enum):
@@ -127,13 +129,20 @@ class EditingTask(object):
     Returns:
       The realized text.
     """
-    output_tokens = []
+    output_tokens = defaultdict(list)
+    result = ''
     for token, tag in zip(tokens, tags):
-      if tag.added_phrase:
-        output_tokens.append(tag.added_phrase)
-      if tag.tag_type in (TagType.KEEP, TagType.SWAP):
-        output_tokens.append(token)
-    return ' '.join(output_tokens)
+      # if tag.added_phrase:
+      #   output_tokens.append(tag.added_phrase)
+      # if tag.tag_type in (TagType.KEEP, TagType.SWAP):
+      #   output_tokens.append(token)
+      if tag.tag_type == TagType.CLUSTER:
+        clusters_number = [int(x) + 1 for x in tag.added_phrase.split(', ')]
+        for n in clusters_number:
+          output_tokens[n].append(token)
+    for key in output_tokens.keys():
+      result = f'{result} CLUSTER {key}: {output_tokens[key]}'
+    return result.strip()
 
   def _first_char_to_upper(self, text):
     """Upcases the first character of the text."""

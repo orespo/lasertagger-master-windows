@@ -16,9 +16,9 @@ set EXPERIMENT=qdmr_experiment
 ::# To quickly test that model training works, set the number of epochs to a
 ::# smaller value (e.g. 0.01).
 ::set NUM_EPOCHS=3.0
-set NUM_EPOCHS=1.25
+set NUM_EPOCHS=2.25
 ::set BATCH_SIZE=64
-set BATCH_SIZE=16
+set BATCH_SIZE=32
 set PHRASE_VOCAB_SIZE=500
 set MAX_INPUT_EXAMPLES=1000000
 set SAVE_CHECKPOINT_STEPS=500
@@ -28,9 +28,9 @@ set SAVE_CHECKPOINT_STEPS=500
 ::goto NEXT_1
 ::goto NEXT_p1
 ::goto NEXT_p2
-goto NEXT_3_1
+::goto NEXT_3_1
 ::goto NEXT_4
-::goto NEXT_5
+goto NEXT_5
 ::goto NEXT_6
 
 :: 1. Phrase Vocabulary Optimization
@@ -109,7 +109,7 @@ goto END
 ::# Get the most recently exported model directory.
 ::TIMESTAMP=$(ls "${OUTPUT_DIR}/models/${EXPERIMENT}/export/" | \
 ::            grep -v "temp-" | sort -r | head -1)
-set SAVED_MODEL_DIR=%OUTPUT_DIR%\models\%EXPERIMENT%\export\1587054658
+set SAVED_MODEL_DIR=%OUTPUT_DIR%\models\%EXPERIMENT%\export\1588256843
 set PREDICTION_FILE=%OUTPUT_DIR%\models\%EXPERIMENT%\pred.tsv
 
 python predict_main.py^
