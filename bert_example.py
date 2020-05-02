@@ -27,7 +27,7 @@ import tagging
 import tagging_converter
 import tensorflow as tf
 from typing import Mapping, MutableSequence, Optional, Sequence, Text
-
+from absl import logging
 
 class BertExample(object):
   """Class for training and inference examples for BERT.
@@ -164,10 +164,13 @@ class BertExampleBuilder(object):
     try:
       labels = [self._label_map[str(tag)] for tag in tags]
     except KeyError:
+      print(f'Could not label example.'
+            f'source: {str(sources)}, '
+            f'target: {target}, '
+            f'tags: {tags}')
       return None
 
-    tokens, labels, token_start_indices = self._split_to_wordpieces(
-        task.source_tokens, labels)
+    tokens, labels, token_start_indices = self._split_to_wordpieces(task.source_tokens, labels)
 
     tokens = self._truncate_list(tokens)
     labels = self._truncate_list(labels)

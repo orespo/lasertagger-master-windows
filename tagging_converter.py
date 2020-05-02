@@ -114,8 +114,8 @@ class TaggingConverter(object):
       commands.extend(tags)
 
     all_tags = commands_to_rough + commands
-    return commands_to_rough
-    #return all_tags
+    #return commands_to_rough
+    return all_tags
 
   def _compute_tags_fixed_order(self, source_tokens, target_tokens):
     """Computes tags when the order of sources is fixed.
@@ -181,6 +181,7 @@ class TaggingConverter(object):
       return tagging.Tag('APPEND|' + ' '.join(target_tokens)), len(target_tokens)
 
     added_phrase = ''
+    next_target_token_idx = target_token_idx + 1
     for num_added_tokens in range(1, self._max_added_phrase_length + 1):
       # if target_token not in self._token_vocabulary:
       #   break

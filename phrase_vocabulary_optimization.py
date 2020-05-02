@@ -34,6 +34,8 @@ from absl import app
 from absl import flags
 from absl import logging
 
+import tagging
+import tagging_converter
 import utils
 
 import numpy as np
@@ -245,6 +247,21 @@ def _count_covered_examples(matrix, vocabulary_size):
   # columns) and count the rows with zero added phrases.
   return (matrix[:, vocabulary_size:].sum(axis=1) == 0).sum()
 
+def write_tags_due_to_new_algorithm(writer, data_iterator):
+  all_possible_tags = collections.defaultdict(int)
+  converter = tagging_converter.TaggingConverter([], False)
+  converter._max_added_phrase_length = 100
+
+  i = 0
+  for source, target in data_iterator:
+    logging.log_every_n(logging.INFO, f'{i} examples were tagged.', 1000)
+    i += 1
+    task = tagging.EditingTask(source)
+    tags = converter.compute_tags(task, target)
+    for tag in tags:
+      all_possible_tags[str(tag)] += 1
+  for key in all_possible_tags:
+    writer.write(f'{key}\n')
 
 def main(argv):
   if len(argv) > 1:
@@ -253,39 +270,43 @@ def main(argv):
   flags.mark_flag_as_required('input_format')
   flags.mark_flag_as_required('output_file')
 
-  data_iterator = utils.yield_sources_and_targets(FLAGS.input_file,
-                                                  FLAGS.input_format)
-  phrase_counter, all_added_phrases = _added_token_counts(
-      data_iterator, FLAGS.enable_swap_tag, FLAGS.max_input_examples)
-  matrix = _construct_added_phrases_matrix(all_added_phrases, phrase_counter)
-  num_examples = len(all_added_phrases)
+  # data_iterator = utils.yield_sources_and_targets(FLAGS.input_file,
+  #                                                 FLAGS.input_format)
+  # phrase_counter, all_added_phrases = _added_token_counts(
+  #     data_iterator, FLAGS.enable_swap_tag, FLAGS.max_input_examples)
+  # matrix = _construct_added_phrases_matrix(all_added_phrases, phrase_counter)
+  # num_examples = len(all_added_phrases)
+
+  data_iterator_2 = utils.yield_sources_and_targets(FLAGS.input_file, FLAGS.input_format)
 
   statistics_file = FLAGS.output_file + '.log'
   with tf.io.gfile.GFile(FLAGS.output_file, 'w') as writer:
     with tf.io.gfile.GFile(statistics_file, 'w') as stats_writer:
-      stats_writer.write('Idx\tFrequency\tCoverage (%)\tPhrase\n')
-      writer.write('KEEP\n')
-      writer.write('DELETE\n')
-      if FLAGS.enable_swap_tag:
-        writer.write('SWAP\n')
-      for i, (phrase, count) in enumerate(
-          phrase_counter.most_common(FLAGS.vocabulary_size +
-                                     FLAGS.num_extra_statistics)):
-        # Write tags.
-        if i < FLAGS.vocabulary_size:
-          writer.write(f'KEEP|{phrase}\n')
-          writer.write(f'DELETE|{phrase}\n')
-        # Write statistics.
-        coverage = 100.0 * _count_covered_examples(matrix, i + 1) / num_examples
-        stats_writer.write(f'{i+1}\t{count}\t{coverage:.2f}\t{phrase}\n')
-      for i in range(10):
-        for j in range(10):
-          writer.write(f'CLUSTER|{i}, {j}\n')
-          for k in range(10):
-            writer.write(f'CLUSTER|{i}, {j}, {k}\n')
-            for t in range(10):
-              writer.write(f'CLUSTER|{i}, {j}, {k}, {t}\n')
-        writer.write(f'CLUSTER|{i}\n')
+      # stats_writer.write('Idx\tFrequency\tCoverage (%)\tPhrase\n')
+      # writer.write('KEEP\n')
+      # writer.write('DELETE\n')
+      # if FLAGS.enable_swap_tag:
+      #   writer.write('SWAP\n')
+      # for i, (phrase, count) in enumerate(
+      #     phrase_counter.most_common(FLAGS.vocabulary_size +
+      #                                FLAGS.num_extra_statistics)):
+      #   # Write tags.
+      #   if i < FLAGS.vocabulary_size:
+      #     writer.write(f'KEEP|{phrase}\n')
+      #     writer.write(f'DELETE|{phrase}\n')
+      #   # Write statistics.
+      #   coverage = 100.0 * _count_covered_examples(matrix, i + 1) / num_examples
+      #   stats_writer.write(f'{i+1}\t{count}\t{coverage:.2f}\t{phrase}\n')
+
+      write_tags_due_to_new_algorithm(writer, data_iterator_2)
+      # for i in range(10):
+      #   for j in range(10):
+      #     writer.write(f'CLUSTER|{i}, {j}\n')
+      #     for k in range(10):
+      #       writer.write(f'CLUSTER|{i}, {j}, {k}\n')
+      #       for t in range(10):
+      #         writer.write(f'CLUSTER|{i}, {j}, {k}, {t}\n')
+      #   writer.write(f'CLUSTER|{i}\n')
   logging.info(f'Wrote tags to: {FLAGS.output_file}')
   logging.info(f'Wrote coverage numbers to: {statistics_file}')
 

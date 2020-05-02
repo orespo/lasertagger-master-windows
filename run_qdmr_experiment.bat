@@ -1,6 +1,3 @@
-
-
-
 @echo off
 call venv\Scripts\activate.bat
 set QDMR_DIR=C:\Users\Osher\Desktop\oren\break-processed-data
@@ -26,11 +23,11 @@ set SAVE_CHECKPOINT_STEPS=500
 :: ###########################
 
 ::goto NEXT_1
-::goto NEXT_p1
+goto NEXT_p1
 ::goto NEXT_p2
 ::goto NEXT_3_1
 ::goto NEXT_4
-goto NEXT_5
+::goto NEXT_5
 ::goto NEXT_6
 
 :: 1. Phrase Vocabulary Optimization
