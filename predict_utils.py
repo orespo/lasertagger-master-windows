@@ -60,7 +60,9 @@ class LaserTaggerPredictor(object):
     example.features['labels'] = predicted_ids
     # Mask out the begin and the end token.
     example.features['labels_mask'] = [0] + [1] * (len(predicted_ids) - 2) + [0]
+
+    token_labels = example.get_token_labels()
     labels = [
-        self._id_2_tag[label_id] for label_id in example.get_token_labels()
+        self._id_2_tag[label_id] for label_id in token_labels
     ]
     return example.editing_task.realize_output(labels)

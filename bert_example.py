@@ -21,6 +21,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+import traceback
 
 from bert import tokenization
 import tagging
@@ -161,13 +162,23 @@ class BertExampleBuilder(object):
     else:
       # If target is not provided, we set all target labels to KEEP.
       tags = [tagging.Tag('KEEP') for _ in task.source_tokens]
+
+    # NOTE: ad-hoc solution for tag that not in label_map
+    for tag in tags:
+      if str(tag) not in self._label_map:
+        self._label_map[str(tag)] = len(self._label_map)
+    # done ad hoc solution
+
     try:
       labels = [self._label_map[str(tag)] for tag in tags]
-    except KeyError:
+    except KeyError as e:
+      traceback.print_exc()
       print(f'Could not label example.'
-            f'source: {str(sources)}, '
-            f'target: {target}, '
-            f'tags: {tags}')
+            f'source: {str(sources)}\n'
+            f'target: {target}\n'
+            f'tags: {tags}\n'
+            f'--------')
+      raise
       return None
 
     tokens, labels, token_start_indices = self._split_to_wordpieces(task.source_tokens, labels)
@@ -210,10 +221,16 @@ class BertExampleBuilder(object):
     bert_labels = []  # Label for each wordpiece.
     # Index of each wordpiece that starts a new token.
     token_start_indices = []
-    for i, token in enumerate(tokens):
+
+    #for i, token in enumerate(tokens):
+    for i in range(len(labels)):
       # '+ 1' is because bert_tokens will be prepended by [CLS] token later.
       token_start_indices.append(len(bert_tokens) + 1)
-      pieces = self._tokenizer.tokenize(token)
+      pieces = None
+      if i < len(tokens):
+        pieces = self._tokenizer.tokenize(tokens[i])
+      else:
+        pieces = ['[PAD]'] # self._tokenizer.tokenize('')
       bert_tokens.extend(pieces)
       bert_labels.extend([labels[i]] * len(pieces))
     return bert_tokens, bert_labels, token_start_indices
