@@ -48,7 +48,7 @@ class TagType(Enum):
   APPEND = 5
   CLUSTER = 6
   NEXT_CLUSTER_COMMANDS = 7
-
+  END_TAG = 8
 
 class Tag(object):
   """Tag that corresponds to a token edit operation.
@@ -131,6 +131,7 @@ class EditingTask(object):
     """
     output_tokens = defaultdict(list)
     result = ''
+    flag = False
     for token, tag in zip(tokens, tags):
       # if tag.added_phrase:
       #   output_tokens.append(tag.added_phrase)
@@ -140,9 +141,17 @@ class EditingTask(object):
         clusters_number = [int(x) + 1 for x in tag.added_phrase.split(', ')]
         for n in clusters_number:
           output_tokens[n].append(token)
+      elif tag.tag_type == TagType.NEXT_CLUSTER_COMMANDS:
+        flag = True
+      if flag:
+        result = f'{result} {str(tag)}'
+
+    result_f = ''
     for key in output_tokens.keys():
-      result = f'{result} CLUSTER {key}: {output_tokens[key]}'
-    return result.strip()
+      result_f = f'{result_f} CLUSTER {key}: {output_tokens[key]}'
+    result_f.strip()
+    result = f'{result_f} {result}'
+    return result
 
   def _first_char_to_upper(self, text):
     """Upcases the first character of the text."""
@@ -171,10 +180,10 @@ class EditingTask(object):
       ValueError: If the number of tags doesn't match the number of source
         tokens.
     """
-    if len(tags) != len(self.source_tokens):
-      raise ValueError('The number of tags ({}) should match the number of '
-                       'source tokens ({})'.format(
-                           len(tags), len(self.source_tokens)))
+    # if len(tags) != len(self.source_tokens):
+    #   raise ValueError('The number of tags ({}) should match the number of '
+    #                    'source tokens ({})'.format(
+    #                        len(tags), len(self.source_tokens)))
     outputs = []  # Realized sources that are joined into the output text.
     if (len(self.first_tokens) == 2 and
         tags[self.first_tokens[1] - 1].tag_type == TagType.SWAP):
@@ -182,6 +191,9 @@ class EditingTask(object):
     else:
       order = range(len(self.first_tokens))
 
+    x = self.source_tokens.copy()
+    x.extend([''] * (len(tags) - len(x)))
+    return self._realize_sequence(x, tags)
     for source_idx in order:
       # Get the span of tokens for the source: [first_token, last_token).
       first_token = self.first_tokens[source_idx]

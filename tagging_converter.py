@@ -114,6 +114,7 @@ class TaggingConverter(object):
       commands.extend(tags)
 
     all_tags = commands_to_rough + commands
+    all_tags.append(tagging.Tag(f'END_TAG'))
     #return commands_to_rough
     return all_tags
 

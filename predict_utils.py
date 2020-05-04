@@ -54,6 +54,9 @@ class LaserTaggerPredictor(object):
 
     # Predict tag IDs.
     keys = ['input_ids', 'input_mask', 'segment_ids']
+    for i in range(len(example.features['input_mask'])):
+      example.features['input_mask'][i] = 1
+
     out = self._predictor({key: [example.features[key]] for key in keys})
     predicted_ids = out['pred'][0].tolist()
     # Realize output.
@@ -62,6 +65,8 @@ class LaserTaggerPredictor(object):
     example.features['labels_mask'] = [0] + [1] * (len(predicted_ids) - 2) + [0]
 
     token_labels = example.get_token_labels()
+    last_i = example._token_start_indices[-1]
+    token_labels.extend(example.features['labels'][last_i:last_i + 30])
     labels = [
         self._id_2_tag[label_id] for label_id in token_labels
     ]

@@ -25,9 +25,9 @@ set SAVE_CHECKPOINT_STEPS=500
 ::goto NEXT_1
 ::goto NEXT_p1
 ::goto NEXT_p2
-goto NEXT_3_1
+::goto NEXT_3_1
 ::goto NEXT_4
-::goto NEXT_5
+goto NEXT_5
 ::goto NEXT_6
 
 :: 1. Phrase Vocabulary Optimization
@@ -92,7 +92,7 @@ goto END
 
 ::# Export the model.
 :NEXT_4
-
+:: always do nothing !!! ???
 python run_lasertagger.py^
   --label_map_file=%OUTPUT_DIR%\label_map.txt^
   --model_config_file=%CONFIG_FILE%^
@@ -106,7 +106,7 @@ goto END
 ::# Get the most recently exported model directory.
 ::TIMESTAMP=$(ls "${OUTPUT_DIR}/models/${EXPERIMENT}/export/" | \
 ::            grep -v "temp-" | sort -r | head -1)
-set SAVED_MODEL_DIR=%OUTPUT_DIR%\models\%EXPERIMENT%\export\1588416886
+set SAVED_MODEL_DIR=%OUTPUT_DIR%\models\%EXPERIMENT%\export\1588601045
 set PREDICTION_FILE=%OUTPUT_DIR%\models\%EXPERIMENT%\pred.tsv
 
 python predict_main.py^
