@@ -92,6 +92,77 @@ class TaggingConverter(object):
 
     return rough, commands, target_sep
 
+  def compute_gotoes(self, input, target):
+      st = WordNetLemmatizer()
+      move_to_target_index = []
+
+      target = target.strip()
+      target_sep = target.split(' @@SEP@@ ')
+      target_sep_stemmed = [[st.lemmatize(w) for w in t.split()] for t in target_sep]
+      target_temp = [' '.join(t) for t in target_sep_stemmed]
+      target_final = ' @@SEP@@ '.join(target_temp)
+      target_final = target_final.split()
+
+      input_tokenized = nltk.tokenize.word_tokenize(input)
+      input_stemmed = [st.lemmatize(w) for w in input_tokenized]
+
+      for word in input_stemmed:
+        if word in target_final:
+          move_to_target_index.append(target_final.index(word))
+        else:
+          move_to_target_index.append(-1)
+      commands = []
+      for x in move_to_target_index:
+        if x  == -1:
+          commands.append(tagging.Tag('DELETE'))
+        else:
+          commands.append(tagging.Tag(f'MOVETO|{x}'))
+
+      realized_sequence = ['' for i in range(len(target_final))]
+      for i, index in enumerate(move_to_target_index):
+        if index != -1:
+          realized_sequence[index] = input_tokenized[i] # wished input_stemmed[i]
+
+      for i in range(len(realized_sequence)):
+        if realized_sequence[i] != '':
+          continue
+
+        if i == 0:
+          continue
+
+        previous_token_with_command = i - 1
+        while previous_token_with_command not in move_to_target_index or move_to_target_index.index(previous_token_with_command) == -1:
+          previous_token_with_command -= 1
+
+        commands[move_to_target_index.index(previous_token_with_command)].added_phrase += f';{target_final[i]}'
+
+      for c in commands:
+          if c.tag_type != tagging.TagType.MOVETO:
+            continue
+          arguments = c.added_phrase.split(';')
+
+          move_to_index = int(arguments[0])
+          concatenate_tokens = arguments[1:]
+
+          move_to_index += 1
+          for word_to_concatenate in concatenate_tokens:
+              realized_sequence[move_to_index] = word_to_concatenate
+              move_to_index += 1
+
+      sep_indices_at_target = []
+      for i in range(len(target_final)):
+        if target_final[i] == '@@SEP@@':
+          sep_indices_at_target.append(i)
+          realized_sequence[i] = '@@SEP@@'
+
+      print(input)
+      print(move_to_target_index)
+      print(sep_indices_at_target)
+      print(commands)
+      print(realized_sequence)
+      print(target_final)
+      print('---------')
+
   def compute_tags(self, task, target):
     """Computes tags needed for converting the source into the target.
 
@@ -112,6 +183,10 @@ class TaggingConverter(object):
 
       commands.append(tagging.Tag(f'NEXT_CLUSTER_COMMANDS'))
       commands.extend(tags)
+
+    ## one more fucking attempt
+    self.compute_gotoes(task.sources[0], target)
+    ##
 
     all_tags = commands_to_rough + commands
     return commands_to_rough

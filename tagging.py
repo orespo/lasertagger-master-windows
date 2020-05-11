@@ -49,6 +49,7 @@ class TagType(Enum):
   CLUSTER = 6
   NEXT_CLUSTER_COMMANDS = 7
 
+  MOVETO = 8
 
 class Tag(object):
   """Tag that corresponds to a token edit operation.
