@@ -92,7 +92,7 @@ class TaggingConverter(object):
 
     return rough, commands, target_sep
 
-  def compute_gotoes(self, input, target):
+  def compute_moveto_tags(self, input, target):
       st = WordNetLemmatizer()
       move_to_target_index = []
 
@@ -131,9 +131,15 @@ class TaggingConverter(object):
           continue
 
         previous_token_with_command = i - 1
+        flag = False
         while previous_token_with_command not in move_to_target_index or move_to_target_index.index(previous_token_with_command) == -1:
+          if previous_token_with_command == -1:
+            flag = True
+            break
           previous_token_with_command -= 1
 
+        if flag:
+          continue
         commands[move_to_target_index.index(previous_token_with_command)].added_phrase += f';{target_final[i]}'
 
       for c in commands:
@@ -155,13 +161,14 @@ class TaggingConverter(object):
           sep_indices_at_target.append(i)
           realized_sequence[i] = '@@SEP@@'
 
-      print(input)
-      print(move_to_target_index)
-      print(sep_indices_at_target)
-      print(commands)
-      print(realized_sequence)
-      print(target_final)
-      print('---------')
+      # print(input)
+      # print(move_to_target_index)
+      # print(sep_indices_at_target)
+      # print(commands)
+      # print(realized_sequence)
+      # print(target_final)
+      # print('---------')
+      return commands
 
   def compute_tags(self, task, target):
     """Computes tags needed for converting the source into the target.
@@ -174,6 +181,11 @@ class TaggingConverter(object):
       List of tagging.Tag objects. If the source couldn't be converted into the
       target via tagging, returns an empty list.
     """
+    ## one more fucking attempt
+    move_to_tags = self.compute_moveto_tags(task.sources[0], target)
+    return move_to_tags
+    ##
+
     rough, commands_to_rough, target_sep = self.rough_separate(task.sources[0], target)
 
     commands = []
@@ -183,10 +195,6 @@ class TaggingConverter(object):
 
       commands.append(tagging.Tag(f'NEXT_CLUSTER_COMMANDS'))
       commands.extend(tags)
-
-    ## one more fucking attempt
-    self.compute_gotoes(task.sources[0], target)
-    ##
 
     all_tags = commands_to_rough + commands
     return commands_to_rough

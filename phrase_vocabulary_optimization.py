@@ -34,6 +34,7 @@ from absl import app
 from absl import flags
 from absl import logging
 
+import tagging_converter
 import utils
 
 import numpy as np
@@ -245,6 +246,22 @@ def _count_covered_examples(matrix, vocabulary_size):
   # columns) and count the rows with zero added phrases.
   return (matrix[:, vocabulary_size:].sum(axis=1) == 0).sum()
 
+def write_all_tags(writer, data_iterator2):
+  converter = tagging_converter.TaggingConverter(
+    [],
+    FLAGS.enable_swap_tag)
+
+  all_commands_str = set()
+  num_examples = 0
+  for sources, target in data_iterator2:
+    num_examples += 1
+    logging.log_every_n(logging.INFO, f'{num_examples} examples processed.',
+                        1000)
+    commands = converter.compute_moveto_tags(sources[0], target)
+    for c in commands:
+      all_commands_str.add(str(c))
+  for s in all_commands_str:
+    writer.write(f'{s}\n')
 
 def main(argv):
   if len(argv) > 1:
@@ -255,10 +272,12 @@ def main(argv):
 
   data_iterator = utils.yield_sources_and_targets(FLAGS.input_file,
                                                   FLAGS.input_format)
-  phrase_counter, all_added_phrases = _added_token_counts(
-      data_iterator, FLAGS.enable_swap_tag, FLAGS.max_input_examples)
-  matrix = _construct_added_phrases_matrix(all_added_phrases, phrase_counter)
-  num_examples = len(all_added_phrases)
+  data_iterator2 = utils.yield_sources_and_targets(FLAGS.input_file,
+                                                  FLAGS.input_format)
+  # phrase_counter, all_added_phrases = _added_token_counts(
+  #     data_iterator, FLAGS.enable_swap_tag, FLAGS.max_input_examples)
+  # matrix = _construct_added_phrases_matrix(all_added_phrases, phrase_counter)
+  # num_examples = len(all_added_phrases)
 
   statistics_file = FLAGS.output_file + '.log'
   with tf.io.gfile.GFile(FLAGS.output_file, 'w') as writer:
@@ -268,6 +287,8 @@ def main(argv):
       writer.write('DELETE\n')
       if FLAGS.enable_swap_tag:
         writer.write('SWAP\n')
+      write_all_tags(writer, data_iterator2)
+      return
       for i, (phrase, count) in enumerate(
           phrase_counter.most_common(FLAGS.vocabulary_size +
                                      FLAGS.num_extra_statistics)):
