@@ -132,6 +132,7 @@ class EditingTask(object):
     """
     output_tokens = defaultdict(list)
     result = ''
+    move_to_realized_seq = ['' for i in range(len(tokens))]
     for token, tag in zip(tokens, tags):
       # if tag.added_phrase:
       #   output_tokens.append(tag.added_phrase)
@@ -141,9 +142,20 @@ class EditingTask(object):
         clusters_number = [int(x) + 1 for x in tag.added_phrase.split(', ')]
         for n in clusters_number:
           output_tokens[n].append(token)
+      if tag.tag_type == TagType.MOVETO:
+        temp = tag.added_phrase.split(';')
+        target_index = int(temp[0])
+        to_add_phrases = temp[1:]
+
+        if target_index >= len(move_to_realized_seq):
+          move_to_realized_seq.extend([''] * (target_index - len(move_to_realized_seq) + 1))
+        move_to_realized_seq[target_index] = token
+        for x in to_add_phrases:
+          move_to_realized_seq[target_index] = f'{move_to_realized_seq[target_index]} {x}'
     for key in output_tokens.keys():
       result = f'{result} CLUSTER {key}: {output_tokens[key]}'
-    return result.strip()
+    # return result.strip()
+    return ' '.join(move_to_realized_seq)
 
   def _first_char_to_upper(self, text):
     """Upcases the first character of the text."""
