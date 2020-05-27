@@ -181,24 +181,24 @@ class TaggingConverter(object):
       List of tagging.Tag objects. If the source couldn't be converted into the
       target via tagging, returns an empty list.
     """
-    ## one more fucking attempt
     move_to_tags = self.compute_moveto_tags(task.sources[0], target)
     return move_to_tags
     ##
 
-    rough, commands_to_rough, target_sep = self.rough_separate(task.sources[0], target)
-
-    commands = []
-    for r, t in zip(rough, target_sep):
-      target_tokens = utils.get_token_list(t)
-      tags = self._compute_tags_fixed_order(tagging.EditingTask([r]).source_tokens, target_tokens)
-
-      commands.append(tagging.Tag(f'NEXT_CLUSTER_COMMANDS'))
-      commands.extend(tags)
-
-    all_tags = commands_to_rough + commands
-    return commands_to_rough
-    #return all_tags
+    # compute commands with cluster, etc. (first attempt).
+    # rough, commands_to_rough, target_sep = self.rough_separate(task.sources[0], target)
+    #
+    # commands = []
+    # for r, t in zip(rough, target_sep):
+    #   target_tokens = utils.get_token_list(t)
+    #   tags = self._compute_tags_fixed_order(tagging.EditingTask([r]).source_tokens, target_tokens)
+    #
+    #   commands.append(tagging.Tag(f'NEXT_CLUSTER_COMMANDS'))
+    #   commands.extend(tags)
+    #
+    # all_tags = commands_to_rough + commands
+    # return commands_to_rough
+    # #return all_tags
 
   def _compute_tags_fixed_order(self, source_tokens, target_tokens):
     """Computes tags when the order of sources is fixed.
